@@ -123,7 +123,7 @@ module "ec2_instances" {
   instance_type               = "t2.micro"
   vpc_security_group_ids      = [data.aws_security_group.default.id]
   subnet_id                   = element(tolist(data.aws_subnet_ids.all.ids), 0)
-  associate_public_ip_address = true
+  associate_public_ip_address = false
   user_data = data.template_file.user_data.rendered
   iam_instance_profile = module.ec2_profile.this_iam_instance_profile_id
 }
