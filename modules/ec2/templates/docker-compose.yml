@@ -14,7 +14,7 @@ services:
       database__connection__password: dbpw
       database__connection__database: ghost
       # this url value is just an example, and is likely wrong for your environment!
-      url: http://www.mcgillij.dev
+      url: https://www.mcgillij.dev
     volumes:
       - ghost_apps:/var/www/ghost/content/apps
       - ghost_data:/var/www/ghost/content/data
