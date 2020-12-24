@@ -14,10 +14,25 @@ services:
       database__connection__password: dbpw
       database__connection__database: ghost
       # this url value is just an example, and is likely wrong for your environment!
-      url: http://blog.mcgillij.dev
+      url: http://www.mcgillij.dev
+    volumes:
+      - ghost_apps:/var/www/ghost/content/apps
+      - ghost_data:/var/www/ghost/content/data
+      - ghost_images:/var/www/ghost/content/images
+      - ghost_themes:/var/www/ghost/content/themes 
 
   db:
     image: mysql:5.7
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: dbpw
+
+volumes:
+  ghost_apps:
+    driver: local
+  ghost_data:
+    driver: local
+  ghost_images:
+    driver: local
+  ghost_themes:
+    driver: local

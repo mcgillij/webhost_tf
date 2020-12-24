@@ -46,6 +46,30 @@ data "aws_iam_policy_document" "logs" {
 ######
 # ELB
 ######
+resource "aws_security_group" "allow_https" {
+  name        = "allow_https"
+  description = "Allow https inbound traffic"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    description = "HTTPS from VPC"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    security_groups = [data.aws_security_group.default.id]
+  }
+
+  tags = {
+    Name = "allow_https"
+  }
+}
 
 module "elb_http" {
   source  = "terraform-aws-modules/elb/aws"
@@ -54,7 +78,7 @@ module "elb_http" {
   name = "mcgillij-webhost-elb"
 
   subnets         = data.aws_subnet_ids.all.ids
-  security_groups = [data.aws_security_group.default.id]
+  security_groups = [aws_security_group.allow_https.id, data.aws_security_group.default.id]
   internal        = false
 
   listener = [
@@ -123,7 +147,7 @@ module "ec2_instances" {
   instance_type               = "t2.micro"
   vpc_security_group_ids      = [data.aws_security_group.default.id]
   subnet_id                   = element(tolist(data.aws_subnet_ids.all.ids), 0)
-  associate_public_ip_address = false
+  associate_public_ip_address = true
   user_data = data.template_file.user_data.rendered
   iam_instance_profile = module.ec2_profile.this_iam_instance_profile_id
 }
