@@ -1,0 +1,23 @@
+version: '3.1'
+
+services:
+  ghost:
+    image: ghost:3-alpine
+    restart: always
+    ports:
+      - 80:2368
+    environment:
+      # see https://docs.ghost.org/docs/config#section-running-ghost-with-config-env-variables
+      database__client: mysql
+      database__connection__host: db
+      database__connection__user: root
+      database__connection__password: dbpw
+      database__connection__database: ghost
+      # this url value is just an example, and is likely wrong for your environment!
+      url: http://blog.mcgillij.dev
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: dbpw
