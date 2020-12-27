@@ -14,40 +14,10 @@ data "aws_security_group" "default" {
   name   = "default"
 }
 
-#########################
-# S3 bucket for ELB logs
-#########################
-data "aws_elb_service_account" "this" {}
+## Security Groups
 
-resource "aws_s3_bucket" "logs" {
-  bucket        = "elb-logs-mcgillij"
-  acl           = "private"
-  policy        = data.aws_iam_policy_document.logs.json
-  force_destroy = true
-}
-
-data "aws_iam_policy_document" "logs" {
-  statement {
-    actions = [
-      "s3:PutObject",
-    ]
-
-    principals {
-      type        = "AWS"
-      identifiers = [data.aws_elb_service_account.this.arn]
-    }
-
-    resources = [
-      "arn:aws:s3:::elb-logs-mcgillij/*",
-    ]
-  }
-}
-
-######
-# ELB
-######
-resource "aws_security_group" "allow_https" {
-  name        = "allow_https"
+resource "aws_security_group" "allow_http_and_https" {
+  name        = "allow_http_and_https"
   description = "Allow https inbound traffic"
   vpc_id      = data.aws_vpc.default.id
 
@@ -59,57 +29,23 @@ resource "aws_security_group" "allow_https" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  egress {
+  ingress {
+    description = "HTTPS from VPC"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    security_groups = [data.aws_security_group.default.id]
+    cidr_blocks = ["0.0.0.0/0"]
   }
+
+#  egress {
+#    from_port       = 80
+#    to_port         = 80
+#    protocol        = "tcp"
+#    security_groups = [data.aws_security_group.default.id]
+#  }
 
   tags = {
-    Name = "allow_https"
-  }
-}
-
-module "elb_http" {
-  source  = "terraform-aws-modules/elb/aws"
-  version = "~> 2.0"
-
-  name = "mcgillij-webhost-elb"
-
-  subnets         = data.aws_subnet_ids.all.ids
-  security_groups = [aws_security_group.allow_https.id, data.aws_security_group.default.id]
-  internal        = false
-
-  listener = [
-    {
-      instance_port     = "80"
-      instance_protocol = "http"
-      lb_port           = "443"
-      lb_protocol       = "https"
-      ssl_certificate_id = "arn:aws:acm:us-east-2:852654189925:certificate/dac82d11-91c4-4fb6-8195-a03485615504"
-    },
-  ]
-
-  health_check = {
-    target              = "HTTP:80/"
-    interval            = 30
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-  }
-
-  access_logs = {
-    bucket = aws_s3_bucket.logs.bucket
-  }
-
-  // ELB attachments
-  number_of_instances = 1
-  instances           = module.ec2_instances.id
-  
-  tags = {
-    Owner       = "mcgillij"
-    Environment = "dev"
+    Name = "allow_http_and_https"
   }
 }
 
@@ -133,7 +69,7 @@ data "aws_ami" "amazon_linux_2" {
 }
 module "ec2_profile" {
   source = "../modules/ec2/instance-profile"
-  name   = "webhost_instance_profile"
+  name   = "webhost_instance_profile2"
 }
 
 module "ec2_instances" {
@@ -142,14 +78,14 @@ module "ec2_instances" {
 
   instance_count = 1
 
-  name                        = "webhost"
+  name                        = "webhost2"
   ami                         = data.aws_ami.amazon_linux_2.id
   instance_type               = "t2.micro"
-  vpc_security_group_ids      = [data.aws_security_group.default.id]
+  vpc_security_group_ids      = [data.aws_security_group.default.id, aws_security_group.allow_http_and_https.id]
   subnet_id                   = element(tolist(data.aws_subnet_ids.all.ids), 0)
   associate_public_ip_address = true
-  user_data = data.template_file.user_data.rendered
-  iam_instance_profile = module.ec2_profile.this_iam_instance_profile_id
+  user_data                   = data.template_file.user_data.rendered
+  iam_instance_profile        = module.ec2_profile.this_iam_instance_profile_id
 }
 
 data "template_file" "user_data" {

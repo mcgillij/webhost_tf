@@ -2,7 +2,7 @@ terraform {
   backend "s3" {
     bucket         = "mcgillij-dev-tf-state"
     region         = "us-east-2"
-    key            = "mcgillij-dev/terraform.tfstate"
+    key            = "mcgillij-dev2/terraform.tfstate"
     dynamodb_table = "mcgillij_dev_lock_ohio"
   }
 }
