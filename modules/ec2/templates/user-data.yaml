@@ -5,6 +5,9 @@ write_files:
     owner: ec2-user:ec2-user
     path: /home/ec2-user/docker-compose.yml
 
+packages:
+  - git
+
 runcmd:
   - amazon-linux-extras install docker
   - service docker start
